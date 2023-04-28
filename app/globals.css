@@ -16,3 +16,26 @@
   top: 3%;
   right: 3%;
 }
+
+.eqkTable {
+  border-collapse: collapse;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  width: 100%;
+  min-width: 400px;
+}
+
+.eqkTable th,
+.eqkTable td {
+  padding: 16px;
+}
+
+.eqkTable thead {
+  background-color: #1976d2;
+  color: #fff;
+}
+
+.eqkTable tbody tr:not(:last-child) {
+  border-bottom: 1px solid #f3f3f3;
+}

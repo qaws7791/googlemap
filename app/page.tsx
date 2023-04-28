@@ -8,6 +8,7 @@ import {LineGeometry} from 'three/examples/jsm/lines/LineGeometry.js';
 import {LineMaterial} from 'three/examples/jsm/lines/LineMaterial.js';
 import { getGeocode, getLatLng } from "use-places-autocomplete";
 import { BoxGeometry, MathUtils, Mesh, MeshMatcapMaterial } from "three";
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const mapOptions = {
   mapId: process.env.NEXT_PUBLIC_MAP_ID,
@@ -16,6 +17,11 @@ const mapOptions = {
   zoom: 15,
   heading: 45,
   tilt: 67,
+}
+
+interface RouteProps {
+  lng: number,
+  lat: number
 }
 
 export default function Home() {
@@ -28,7 +34,7 @@ export default function Home() {
 
 function MapComponent() {
   const [map,setMap] = useState();
-  const [route,setRoute] = useState()
+  const [route,setRoute] = useState<RouteProps[]>()
   const ref = useRef();
   const overlay = useRef();
 
@@ -56,6 +62,7 @@ function MapComponent() {
 function Animation({map,route,mapref}) {
   const overlay = useRef();
   const trackRef = useRef();
+  const markerRef = useRef();
 
   useEffect(() => {
     map.setCenter(route[Math.floor(route.length/2)],17)
@@ -65,7 +72,10 @@ function Animation({map,route,mapref}) {
         map
       })
     }
+
     console.log(route)
+
+    //경로 만들기. 좌표 -> threejs 점 -> threejs 커브
     const points = route.map((p) => overlay.current.latLngAltitudeToVector3(p))
     console.log(points)
     const curve = new CatmullRomCurve3(points,false,'catmullrom',0.1);
@@ -74,27 +84,35 @@ function Animation({map,route,mapref}) {
     }
     trackRef.current = createTrackFromCurve(curve)
 
+    //박스 만들기
     const box = new Mesh(
       new BoxGeometry(100, 500, 100),
       new MeshBasicMaterial({color: 0xff0000})
     );
     const pos = overlay.current.latLngAltitudeToVector3(mapOptions.center);
     box.position.copy(pos);
-    console.log(pos)
-    console.log(map)
-    console.log(overlay.current)
-    console.log(overlay.current.latLngAltitudeToVector3(mapOptions.center))
-    // add box mesh to the scene
+
+    //모델 추가
+    loadGLTFModel().then(model => {
+      console.log(model)
+      if(markerRef.current) {
+        overlay.current.scene.remove(markerRef.current);
+      }
+      markerRef.current = model;
+      markerRef.current.position.copy({...points[0],z:300})
+      console.log(markerRef.current)
+      overlay.current.scene.add(markerRef.current)
+
+    })
+    
+    // 장면에 요소를 추가
     overlay.current.scene.add(box);
     overlay.current.scene.add(trackRef.current)
-    console.log(trackRef.current)
+    overlay.current.scene.add(markerRef.current)
 
-      console.log(overlay.current)
-
-    console.log(mapref.current.offsetheight)
-    console.log()
-
+    //애니메이션 실행
     const animate = () => {
+
       box.rotateY(MathUtils.degToRad(0.1));
       trackRef.current.material.resolution.copy(
         {
@@ -109,25 +127,6 @@ function Animation({map,route,mapref}) {
     requestAnimationFrame(animate);
   },[route])
 }
-
-
-// function MyMapComponent() {
-//   const [map,setMap] = useState();
-//   const [route,setRoute] = useState()
-//   const ref = useRef();
-
-//   useEffect(() => {
-//     setMap(new window.google.maps.Map(ref.current, mapOptions));
-//   },[]);
-
-//   return (
-//     <div className="main">
-//       <div ref={ref} id="map" />
-//       {map && <Direction setRoute={setRoute}/>}
-//       {map && route && <Animation map={map} route={route}/>}
-//     </div>
-//   );
-// }
 
 function Direction({setRoute}) {
   const [origin] = useState('27 Front St Toronto')
@@ -178,39 +177,6 @@ async function  fetchDirections(origin, destination, setRoute) {
 }
 
 
-// function Animation({map, route}){
-//   const overlayRef = useRef();
-//   const trackRef = useRef();
-
-//   useEffect(() => {
-//     map.setCenter(route[Math.floor(route.length/2)],17)
-
-//     if(!overlayRef.current) {
-//       overlayRef.current = new ThreeJSOverlayView({anchor: mapOptions.center})
-//       overlayRef.current.setMap(map);
-//     }
-
-//     const scene = overlayRef.current.scene;
-//     const points = route.map((p) => overlayRef.current.latLngAltitudeToVector3(p))
-//     console.log(points)
-//     const curve = new CatmullRomCurve3(points);
-//     if(trackRef.current) {
-//       scene.remove(trackRef.current)
-//     }
-//     trackRef.current = createTrackFromCurve(curve)
-//     console.log(curve)
-//     scene.add(trackRef.current);
-
-//     overlayRef.current.update = () => {
-//       overlayRef.current.getViewportSize()
-//     }
-
-//     overlayRef.current.requestRedraw();
-//   },[route])
-
-//   return null;
-// }
-
 function createTrackFromCurve(curve) {
   const points = curve.getSpacedPoints(curve.points.length * 50);
   const positions = points.map((point) => point.toArray()).flat();
@@ -222,4 +188,14 @@ function createTrackFromCurve(curve) {
       linewidth: 6,
     })
   );
+}
+
+async function loadGLTFModel() {
+  const loader = new GLTFLoader();
+  const object = await loader.loadAsync('/map_pointer_3d_icon/scene.gltf');
+  const scene = object.scene;
+  scene.scale.setScalar(100);
+  scene.rotation.set(Math.PI / 2,0,0)
+
+  return scene;
 }
