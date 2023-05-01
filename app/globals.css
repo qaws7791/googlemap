@@ -39,3 +39,19 @@
 .eqkTable tbody tr:not(:last-child) {
   border-bottom: 1px solid #f3f3f3;
 }
+
+
+.marker {
+  color: #fff;
+  background-color: #000;
+  font-family: 700;
+  padding: 20px;
+  border-radius: 10px;
+  z-index: 9999;
+  transition: all 0.2s ease-in-out;
+}
+
+
+.marker h2 {
+  margin: 0;
+}
