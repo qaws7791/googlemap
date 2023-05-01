@@ -76,37 +76,38 @@ function MapComponent() {
 
 
 
+
 function Earthquake ({map,setEarthquake}) {
   const [eqkList,setEqkList] = useState<EqkProps[]>([]);
+
+  const fetchData = async () => {
+    const url = 'https://mgl7p2xkek.execute-api.ap-northeast-2.amazonaws.com/default/mongodb-to-response';
+    // fetch(url)
+    //   .then(res => res.json())
+    //   .then(json => {
+    //     setEqkList([...json])
+    // })
+
+    try {
+      const res = await fetch(url);
+      const json =await res.json()
+      setEqkList([...json])
+    } catch (error) {
+      console.log('fetch error: ',error)
+    }
+  }
+
   useEffect(() => {
-    setEqkList([
-      {
-        num:24,
-        time:1689045900,
-        mag:2.6,
-        depth:14,
-        maxLevel:'Ⅰ',
-        lat:33.09,
-        lon:125.42,
-        loc:'제주 서귀포시 서쪽 108km 해역'
-      },
-      {
-        num:11,
-        time:1684871340,
-        mag:2.5,
-        depth:8,
-        maxLevel:'Ⅳ',
-        lat:34.67,
-        lon:127.36,
-        loc:'전남 고흥군 북동쪽 11km 지역'
-      }
-    ])
+    console.log(eqkList)
+  },[eqkList])
+
+  useEffect(() => {
+    fetchData();
   },[])
   return (<div className="eqkList">
-<table className="eqkTable">
+    <table className="eqkTable">
       <thead>
         <tr>
-          <th>번호</th>
           <th>발생시각</th>
           <th>규모</th>
           <th>깊이</th>
@@ -114,20 +115,22 @@ function Earthquake ({map,setEarthquake}) {
           <th>위도</th>
           <th>경도</th>
           <th>위치</th>
-          <th>보기</th>
+          <th>맵</th>
+          <th>자세히</th>
         </tr>
       </thead>
       <tbody>
       {eqkList.map((eqk)=> {
-        return(<tr key={eqk.num}>
-          <td>{eqk.num}</td>
+        return(<tr key={eqk._id}>
           <td>{eqk.time}</td>
-          <td>{eqk.mag}</td>
+          <td>{eqk.size}</td>
           <td>{eqk.depth}</td>
-          <td>{eqk.maxLevel}</td>
-          <td>{eqk.lat}</td>
-          <td>{eqk.lon}</td>
-          <td>{eqk.loc}</td>
+          <td>{eqk.max}</td>
+          <td>{eqk.location.coordinates[1]}</td>
+          <td>{eqk.location.coordinates[0]}</td>
+          <td>{eqk.name}</td>
+          <td>{eqk.mapUrl === '-' ? '-' : <a href={eqk.mapUrl} target='_blank'>맵</a>}</td>
+          <td>{eqk.detailUrl === '-' ? '-' : <a href={eqk.detailUrl} target='_blank'>자세히</a>}</td>
           <td><button onClick={()=>setEarthquake(eqk)}>보기</button></td>
         </tr>)
       })}
@@ -136,23 +139,6 @@ function Earthquake ({map,setEarthquake}) {
   </div>)
 }
 
-function Direction({setRoute}) {
-  const [origin] = useState('27 Front St Toronto')
-  const [destination] = useState('75 Yonge Street Toronto')
-
-  useEffect(() => {
-    fetchDirections(origin, destination,setRoute)
-  },[origin,destination])
-
-  return (<div className="directions">
-  <h2>Directions</h2>
-  <h3>Origin</h3>
-  <p>{origin}</p>
-  <h3>Destination</h3>
-  <p>{destination}</p>
-</div>)
-    
-}
 
 function Animation({map,earthquake,mapref}) {
   const overlay = useRef();
@@ -160,7 +146,7 @@ function Animation({map,earthquake,mapref}) {
 
   useEffect(() => {
     console.log(earthquake)
-    map.setCenter({lng:earthquake.lon,lat:earthquake.lat},20)
+    map.setCenter({lng:earthquake.location.coordinates[0],lat:earthquake.location.coordinates[1]},20)
 
     if(!overlay.current) {
       overlay.current = new ThreeJSOverlayView({
@@ -177,7 +163,10 @@ function Animation({map,earthquake,mapref}) {
         overlay.current.scene.remove(markerRef.current);
       }
       markerRef.current = model;
-      markerRef.current.position.copy({...overlay.current.latLngAltitudeToVector3({lng:earthquake.lon,lat:earthquake.lat}),z:300})
+      markerRef.current.position.copy({...overlay.current.latLngAltitudeToVector3({
+        lng:earthquake.location.coordinates[0],
+        lat:earthquake.location.coordinates[1]
+      }),z:300})
       console.log(markerRef.current)
       overlay.current.scene.add(markerRef.current)
 
