@@ -1,10 +1,22 @@
-#map {
+*,html,body {
+  margin: 0;
+  padding: 0;
+}
+body {
   width: 100vw;
   height: 100vh;
+  margin: 0;
+}
+
+#map {
+  flex: 1;
   position: relative;
 }
 
 .main {
+  width: 100%;
+  height: 100%;
+  display: flex;
   position: relative;
 }
 
@@ -48,7 +60,37 @@
   padding: 20px;
   border-radius: 10px;
   z-index: 9999;
-  transition: all 0.2s ease-in-out;
+  transition: all 2s;
+  position: relative;
+  width: 25px;
+  height: 25px;
+
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+  
+}
+
+.eqk-detail {
+  position: absolute;
+  animation: fadeIn 2s;
+}
+
+
+
+.highlight {
+  width: 180px;
+  height: 110px;
+  transition: all 1s ease-in-out;
 }
 
 
