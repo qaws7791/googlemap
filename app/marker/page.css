@@ -28,3 +28,90 @@
   height: 100%;
   background-color: #fff;
 }
+
+.marker {
+  background-color: #fff;
+  color: #313131;
+  border: 2px solid rgb(211 211 211);
+  display: flex;
+  padding: 10px;
+  width: 72px;
+  align-items: center;
+  border-radius: 8px;
+  position: relative;
+  margin-right: 10px;
+  gap: 10px;
+}
+.marker:before {
+  content: "";
+  position: absolute;
+  width: 0;
+  z-index: 0;
+  border-style: solid;
+  border-color: rgb(211 211 211) transparent;
+  border-width: 15px 15px 0;
+  bottom: -15.5px;
+  left: 50%;
+  margin-left: -15px;
+  display: block;
+}
+
+.marker:after {
+  content: "";
+  position: absolute;
+  display: block;
+  width: 0;
+  z-index: 1;
+  border-style: solid;
+  border-color: #ffffff transparent;
+  border-width: 14px 14px 0;
+  bottom: -14px;
+  left: 50%;
+  margin-left: -14px;
+}
+.marker-title {
+  display: inline-block;
+  width: 70px;
+  height: 70px;
+  line-height: 70px;
+  text-align: center;
+  border: 1px solid rgb(175, 175, 175);
+  border-radius: 8px;
+  
+  color: #0058e1;
+  font-size: 20px;
+}
+.marker-content {
+  display: flex;
+  flex-direction: column;
+  width: 180px;
+}
+.marker-name {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 0px;
+}
+.marker-subname {
+  font-size: 11px;
+  margin-bottom: 4px;
+  color: #5b5b5b;
+}
+.marker-loc {
+  margin-bottom: 4px;
+}
+
+.marker-loc > span {
+  font-size: 10px;
+  color: rgb(0, 139, 231);
+  border: 1px solid rgb(151, 213, 255);
+  padding: 0 10px;
+  border-radius: 20px;
+}
+.marker-date {
+  font-size: 10px;
+  color: #5b5b5b;
+}
+
+.highlight {
+  width: 260px;
+}

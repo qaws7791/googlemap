@@ -7,6 +7,7 @@ import {getLocation} from '../../func/common';
 import { Provider,useSelector,useDispatch } from "react-redux";
 import store from "@/redux/store";
 import userSlice from "@/redux/userSlice";
+import eqkListSlice from "@/redux/eqkListSlice";
 
 const mapOptions = {
   mapId: process.env.NEXT_PUBLIC_MAP_ID,
@@ -59,6 +60,7 @@ function SideNav() {
   const [menuOpen,setMenuOpen] = useState(false);
   const [contentOpen,setContentOpen] = useState('');
   const user = useSelector((state)=> {return state.user})
+  const eqkList = useSelector((state)=> {return state.eqkList.eqkList})
   const dispatch = useDispatch();
   const [radio,setRadio] = useState('10');
 
@@ -101,14 +103,20 @@ function SideNav() {
       </div>
       {contentOpen === 'menu1' && 
         <div>
-          <button onClick={setLocation}>현재 위치 가져오기</button>
-          <input type="radio" id="small" name="distance" value="10" checked={radio ==='10'} onChange={handleInputChange}/>
-          <label htmlFor="small">10km</label>
-          <input type="radio" id="medium" name="distance" value="50" checked={radio ==='50'} onChange={handleInputChange}/>
-          <label htmlFor="medium">50km</label>
-          <input type="radio" id="large" name="distance" value="100" checked={radio ==='100'} onChange={handleInputChange}/>
-          <label htmlFor="large">100km</label>
-          <button onClick={() =>     dispatch(userSlice.actions.changeDistance(+radio*1000))}>확인</button>
+          <div>
+            <button onClick={setLocation}>현재 위치 가져오기</button>
+            <p>반경 설정</p>
+            <input type="radio" id="small" name="distance" value="10" checked={radio ==='10'} onChange={handleInputChange}/>
+            <label htmlFor="small">10km</label>
+            <input type="radio" id="medium" name="distance" value="50" checked={radio ==='50'} onChange={handleInputChange}/>
+            <label htmlFor="medium">50km</label>
+            <input type="radio" id="large" name="distance" value="100" checked={radio ==='100'} onChange={handleInputChange}/>
+            <label htmlFor="large">100km</label>
+            <button onClick={() =>     dispatch(userSlice.actions.changeDistance(+radio*1000))}>확인</button>
+          </div>
+          <div>
+            {eqkList && eqkList.map((eqk,index) => (<p key={eqk._id}>{index}. {eqk.name}</p>))}
+          </div>
         </div>}
       {contentOpen === 'menu2' && <p>menu2</p>}
 
@@ -148,11 +156,8 @@ function UserPosition({map}) {
 
   return(
     <>
-      {user && <Marker map={map} position={user.position}>
-        <div className="marker">
-          <h2>위치</h2>
-        </div>
-      </Marker>}
+      {user && <BasicMarker map={map} position={user.position}>
+      </BasicMarker>}
       {user && <Circle map={map} center={user.position} distance={user.distance_meter}/>}
     </>
   )
@@ -160,8 +165,10 @@ function UserPosition({map}) {
 
 function Earthquakes({map}) {
   const user = useSelector((state)=> {return state.user})
-  const [data, setData] = useState();
+  const eqkList = useSelector((state)=> {return state.eqkList.eqkList})
+
   const [highlight,setHighlight] = useState();
+  const dispatch = useDispatch();
 
 
   const fetchData = async () => {
@@ -174,12 +181,16 @@ function Earthquakes({map}) {
         distance: user.distance_meter,
       }));
       const json =await res.json()
-      setData([...json])
+      dispatch(eqkListSlice.actions.setEqks([...json]))
       console.log('fetch success')
     } catch (error) {
       console.log('fetch error: ',error)
     }
   }
+
+  useEffect(() => {
+    console.log(eqkList.length)
+  },[eqkList])
 
   useEffect(() => {
     fetchData();
@@ -198,9 +209,11 @@ function Earthquakes({map}) {
     setHighlight(null)
   }
 
+
+
   return (
     <>
-    {data&& data.map((eqk) => (
+    {eqkList && eqkList.map((eqk) => (
       <Marker 
       key={eqk._id} 
       map={map} 
@@ -208,21 +221,23 @@ function Earthquakes({map}) {
       highlight={highlight}
       setHighlight={setHighlight}
       >
-      <div 
-        className={`marker ${highlight === eqk._id ? "highlight": ""}`}
-        onMouseEnter={()=> onMouseEnter(eqk._id)}
-        onMouseLeave={() => onMouseLeave()}
-
-      >
-        <h2>{eqk.size}</h2>
-        {highlight === eqk._id ? (
-          <div className="eqk-detail">
-            <p>`{eqk.location.coordinates[1]},{eqk.location.coordinates[0]}`</p>
-            <p>{new Date(eqk.time).toLocaleString()}</p>
-            <p>{eqk.name}</p>
-          </div>
-        ): null}
-      </div>
+        <div 
+            className={`marker ${highlight === eqk._id ? "highlight": ""}`}
+            onMouseEnter={()=> onMouseEnter(eqk._id)}
+            onMouseLeave={() => onMouseLeave()}>
+          <h2 className="marker-title">{eqk.size}</h2>
+          {highlight === eqk._id ? (<div className="marker-content">
+            <p className="marker-name">
+              {eqk.name.split(' ').slice(0,2)}
+            </p>
+            <p className="marker-subname">
+              {eqk.name.split(' ').slice(2)}
+            </p>
+            <p className="marker-loc"><span>{eqk.location.coordinates[1]},{eqk.location.coordinates[0]}</span></p>
+            <p className="marker-date">-{new Date(eqk.time).toLocaleString()}</p>
+          </div>): null}
+          
+        </div>
     </Marker>
     ))}
     </>
@@ -230,7 +245,7 @@ function Earthquakes({map}) {
 }
 
 
-function Marker({map,children, position,highlight,setHighlight}) {
+function Marker({map,children, position}) {
   const markerRef = useRef();
   const rootRef = useRef();
 
@@ -248,7 +263,9 @@ function Marker({map,children, position,highlight,setHighlight}) {
       markerRef.current.addListener("click",()=> {
         console.log('click')
       })
-
+      return () => {
+        markerRef.current.map = null;
+      }
 
     }
   },[]);
@@ -257,7 +274,31 @@ function Marker({map,children, position,highlight,setHighlight}) {
     rootRef.current.render(children);
     markerRef.current.position = position;
     markerRef.current.map = map;
+    
   }, [map, position, children])
+}
+
+function BasicMarker({map, position}) {
+  const markerRef = useRef();
+
+
+
+  useEffect(() => {
+      if(!map || markerRef.current) return;
+      markerRef.current = new google.maps.Marker({
+        map
+      })
+
+      return () => {
+        markerRef.current.map = null;
+      }
+  },[]);
+
+  useEffect(() => {
+
+    markerRef.current.setPosition(position)
+    
+  }, [map, position])
 }
 
 function Circle({map,center,distance}) {

@@ -53,47 +53,9 @@ body {
 }
 
 
-.marker {
-  color: #fff;
-  background-color: #000;
-  font-family: 700;
-  padding: 20px;
-  border-radius: 10px;
-  z-index: 9999;
-  transition: all 2s;
-  position: relative;
-  width: 25px;
-  height: 25px;
-
-}
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 1;
-  }
-  
-}
-
-.eqk-detail {
-  position: absolute;
-  animation: fadeIn 2s;
-}
 
 
 
-.highlight {
-  width: 180px;
-  height: 110px;
-  transition: all 1s ease-in-out;
-}
 
 
-.marker h2 {
-  margin: 0;
-}
+
