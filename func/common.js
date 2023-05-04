@@ -10,3 +10,15 @@ export function getLocation() {
     }
   });
 }
+
+export const fetchRegionData = async (url, params) => {
+  const URLparams = new URLSearchParams(params);
+  try {
+    const res = await fetch(url + URLparams);
+    const json = await res.json();
+    console.log("fetch success");
+    return json.response.result;
+  } catch (error) {
+    console.log("fetch error: ", error);
+  }
+};
