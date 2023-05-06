@@ -1,7 +1,7 @@
 "use client"
 import { Wrapper } from "@googlemaps/react-wrapper";
-import { useRef,useEffect, useState } from 'react';
-import { createRoot} from 'react-dom/client'
+import { useRef,useEffect, useState, useMemo } from 'react';
+
 import './page.css';
 import {fetchRegionData, getLocation} from '../../func/common';
 import { Provider,useSelector,useDispatch } from "react-redux";
@@ -10,6 +10,10 @@ import userSlice from "@/redux/userSlice";
 import eqkListSlice from "@/redux/eqkListSlice";
 import regionSlice from "@/redux/regionSlice";
 import SelectForm from "@/components/SelectForm";
+import menuSlice from "@/redux/menuSlice";
+import BasicMarker from "@/components/BasicMarker";
+import BasicCircle from "@/components/BasicCircle";
+import AdvancedMarker from "@/components/AdvancedMarker";
 
 const mapOptions = {
   mapId: process.env.NEXT_PUBLIC_MAP_ID,
@@ -37,8 +41,8 @@ function MapComponent() {
   const [map,setMap] = useState();
   const user = useSelector((state)=> {return state.user})
   const region = useSelector((state)=> {return state.region.region})
-  const regionCenter = useSelector((state)=> {return state.region.center})
   const ref = useRef();
+  const currentMenu = useSelector((state)=>{return state.menu.currentMenu})
 
     useEffect(() => {
     setMap(new window.google.maps.Map(ref.current, {...mapOptions,mapTypeControl: true,
@@ -55,8 +59,8 @@ function MapComponent() {
     <div id="map" ref={ref}></div>
     <div></div>
     {map && <UserPosition map={map}/>}
-    {map && user && <Earthquakes map={map}/>}
-    {map && region[0] && <Polygon map={map} center={regionCenter} path={region[0].geometry.coordinates[0][0].map((item)=> {return({lng:item[0],lat:item[1]})})}/>}
+    {map && user && currentMenu==='near'&& <Earthquakes map={map}/>}
+    {map && user && currentMenu==='dong' &&<DongEarthquakes map={map}/>}
     </div>)
 }
 
@@ -64,6 +68,7 @@ function Polygon({map, path,center}) {
     const polygonRef = useRef();
     console.log(path)
     useEffect(()=>{
+      console.log('new polygon')
         polygonRef.current = new google.maps.Polygon({
             paths: path,
             strokeColor: "#FF0000",
@@ -74,11 +79,14 @@ function Polygon({map, path,center}) {
           })
           polygonRef.current.setMap(map);
           map.setCenter(path[0])
-          return ()=> { polygon.setMap(null)}
+          return ()=> { 
+            console.log('remove polygon');
+            polygonRef.current.setMap(null)}
     },[]);
 
     useEffect(()=> {
         if(path && polygonRef) {
+          console.log('path changed')
             polygonRef.current.setPaths(path)
             map.setCenter(center)
             map.setZoom(16)
@@ -125,8 +133,8 @@ function SideNav() {
         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" style={{fill:'rgba(0, 0, 0, 1)'}}><path d="m16.192 6.344-4.243 4.242-4.242-4.242-1.414 1.414L10.535 12l-4.242 4.242 1.414 1.414 4.242-4.242 4.243 4.242 1.414-1.414L13.364 12l4.242-4.242z"></path></svg>
         </div>
         <ul>
-          <li onClick={() => {setContentOpen('menu1');setMenuOpen(false)}}>menu1</li>
-          <li onClick={() => {setContentOpen('menu2');setMenuOpen(false)}}>menu2</li>
+          <li onClick={() => {setContentOpen('menu1');setMenuOpen(false);dispatch(menuSlice.actions.changeMenuNear())}}>near</li>
+          <li onClick={() => {setContentOpen('menu2');setMenuOpen(false);dispatch(menuSlice.actions.changeMenuDong())}}>dong</li>
         </ul>
         
       </div>}
@@ -192,7 +200,7 @@ function UserPosition({map}) {
     <>
       {user && <BasicMarker map={map} position={user.position}>
       </BasicMarker>}
-      {user && <Circle map={map} center={user.position} distance={user.distance_meter}/>}
+      {user && <BasicCircle map={map} center={user.position} distance={user.distance_meter}/>}
     </>
   )
 }
@@ -248,7 +256,7 @@ function Earthquakes({map}) {
   return (
     <>
     {eqkList && eqkList.map((eqk) => (
-      <Marker 
+      <AdvancedMarker
       key={eqk._id} 
       map={map} 
       position={{lat:eqk.location.coordinates[1],lng:eqk.location.coordinates[0]}}
@@ -272,98 +280,96 @@ function Earthquakes({map}) {
           </div>): null}
           
         </div>
-    </Marker>
+    </AdvancedMarker>
     ))}
     </>
   )
 }
 
+function DongEarthquakes({map}) {
+  const user = useSelector((state)=> {return state.user})
+  const eqkList = useSelector((state)=> {return state.region.eqkList})
+  const region = useSelector((state)=> {return state.region.region})
+  const regionCenter = useSelector((state)=> {return state.region.center})
+  const [highlight,setHighlight] = useState();
+  const dispatch = useDispatch();
+  const path = useMemo(()=> region[0] ? region[0].geometry.coordinates[0][0].map((item)=> {return({lng:item[0],lat:item[1]})}) : null,[region])
 
-function Marker({map,children, position}) {
-  const markerRef = useRef();
-  const rootRef = useRef();
 
+  const fetchData = async () => {
+    const url = 'https://mgl7p2xkek.execute-api.ap-northeast-2.amazonaws.com/default/mongodb-find-dong-earthquake?';
 
-
-  useEffect(() => {
-    if(!rootRef.current) {
-      const container = document.createElement("div");
-      rootRef.current = createRoot(container);
-
-      markerRef.current = new google.maps.marker.AdvancedMarkerView({
-        position,
-        content: container
-      })
-      markerRef.current.addListener("click",()=> {
-        console.log('click')
-      })
-      return () => {
-        markerRef.current.map = null;
-      }
-
+    try {
+      const res = await fetch(url + new URLSearchParams({
+        emd_cd: region[0].properties.emd_cd,
+      }));
+      const json =await res.json()
+      dispatch(regionSlice.actions.setEqkList([...json]))
+      console.log('fetch success')
+    } catch (error) {
+      console.log('fetch error: ',error)
     }
-  },[]);
+  }
 
   useEffect(() => {
-    rootRef.current.render(children);
-    markerRef.current.position = position;
-    markerRef.current.map = map;
-    
-  }, [map, position, children])
+    console.log(eqkList.length)
+  },[eqkList])
+
+  useEffect(() => {
+    if(region){
+      fetchData();
+    }
+  },[region])
+
+  useEffect(() => {
+    console.log('highlight: ',highlight)
+  },[highlight])
+
+  const onMouseEnter = (id) => {
+    setHighlight(id);
+    console.log('mouseEnter: ', id)
+  }
+
+  const onMouseLeave = () => {
+    setHighlight(null)
+  }
+
+
+
+  return (
+    <>
+    {eqkList && eqkList.map((eqk) => (
+      <AdvancedMarker 
+      key={eqk._id} 
+      map={map} 
+      position={{lat:eqk.location.coordinates[1],lng:eqk.location.coordinates[0]}}
+      >
+        <div 
+            className={`marker ${highlight === eqk._id ? "highlight": ""}`}
+            onMouseEnter={()=> onMouseEnter(eqk._id)}
+            onMouseLeave={() => onMouseLeave()}>
+          <h2 className="marker-title">{eqk.size}</h2>
+          {highlight === eqk._id ? (<div className="marker-content">
+            <p className="marker-name">
+              {eqk.name.split(' ').slice(0,2)}
+            </p>
+            <p className="marker-subname">
+              {eqk.name.split(' ').slice(2)}
+            </p>
+            <p className="marker-loc"><span>{eqk.location.coordinates[1]},{eqk.location.coordinates[0]}</span></p>
+            <p className="marker-date">-{new Date(eqk.time).toLocaleString()}</p>
+          </div>): null}
+        </div>
+    </AdvancedMarker>
+    ))}
+    {region[0] && <Polygon map={map} center={regionCenter} path={path}/>} 
+    </>
+  )
 }
 
-function BasicMarker({map, position}) {
-  const markerRef = useRef();
 
 
 
-  useEffect(() => {
-      if(!map || markerRef.current) return;
-      markerRef.current = new google.maps.Marker({
-        map
-      })
-
-      return () => {
-        markerRef.current.map = null;
-      }
-  },[]);
-
-  useEffect(() => {
-
-    markerRef.current.setPosition(position)
-    
-  }, [map, position])
-}
-
-function Circle({map,center,distance}) {
-  const circleRef = useRef();
-
-  useEffect(() => {
-    console.log(center)
-    circleRef.current = new google.maps.Circle({
-      strokeColor: "#FF0000",
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
-      fillColor: "#FF0000",
-      fillOpacity: 0.35,
-      map:map,
-      center: center,
-      radius: distance,
-    })
-    console.log(circleRef.current)
-  },[]);
-
-  useEffect(() => {
-    circleRef.current.setCenter(center)
-    circleRef.current.setMap(map)
-    circleRef.current.setRadius(distance)
-
-  },[map,center,distance])
-
-
-
-
-}
 // 시도 데이터 로드 -> 첫 번째 시도 자동 선택
 // 시도 선택 -> 시군구 데이터 로드
 // 시군구 데이터 로드 -> 첫 번째 시군구 자동 선택

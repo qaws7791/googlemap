@@ -3,7 +3,8 @@ const regionSlice = createSlice({
   name: "regionSlice",
   initialState: {
     region: {},
-    center: {}
+    center: {},
+    eqkList: [],
   },
   reducers: {
     setRegion: (state, action) => {
@@ -11,6 +12,9 @@ const regionSlice = createSlice({
     },
     setCenter: (state, action) => {
       state.center = action.payload;
+    },
+    setEqkList: (state, action) => {
+      state.eqkList = action.payload;
     }
   }
 });
