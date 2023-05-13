@@ -14,6 +14,11 @@
   border-right: 1px solid #eee;
 }
 
+.side-nav-item:hover {
+background-color: #e5e5e5;
+border-radius: 10px;
+}
+
 
 .side-nav-detail {
   width: 300px;
@@ -23,6 +28,33 @@
   left: 0;
   top: 0;
   z-index: 9999;
+  flex-direction: column;
+  display: flex;
+}
+
+.side-nav-detail-header {
+  display: flex;
+  justify-content: end;
+  border-bottom: 1px solid #eee;
+}
+
+.side-nav-close-btn:hover {
+  background-color: #e5e5e5;
+  border-radius: 10px;
+  cursor: pointer;
+
+}
+
+.side-nav-detail-item {
+  font-size: 20px;
+  padding: 16px 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.side-nav-detail-item:hover {
+  background-color: #eee;
+  cursor: pointer;
+
 }
 
 .side-nav-content {
