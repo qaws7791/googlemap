@@ -5,8 +5,6 @@ function AdvancedMarker({map,children, position}) {
   const markerRef = useRef();
   const rootRef = useRef();
 
-
-
   useEffect(() => {
     if(!rootRef.current) {
       const container = document.createElement("div");
@@ -32,6 +30,7 @@ function AdvancedMarker({map,children, position}) {
     markerRef.current.map = map;
     
   }, [map, position, children])
+  return null
 }
 
 export default AdvancedMarker;

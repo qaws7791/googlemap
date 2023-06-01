@@ -21,6 +21,8 @@ function BasicMarker({map, position}) {
     markerRef.current.setPosition(position)
     
   }, [map, position])
+
+  return null;
 }
 
 export default BasicMarker;

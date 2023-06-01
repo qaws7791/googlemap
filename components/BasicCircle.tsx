@@ -24,6 +24,8 @@ function BasicCircle({map,center,distance}) {
     circleRef.current.setRadius(distance)
 
   },[map,center,distance])
+
+  return null;
 }
 
 export default BasicCircle;
