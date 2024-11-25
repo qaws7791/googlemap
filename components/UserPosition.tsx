@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import BasicMarker from "./BasicMarker";
 import BasicCircle from "./BasicCircle";
 
-function UserPosition({map}) {
+function UserPosition({map}:{map:google.maps.Map}) {
   const user = useSelector((state)=> {return state.user})
   const dispatch = useDispatch();
   
@@ -26,8 +26,7 @@ function UserPosition({map}) {
     if(user && user.position) {
       map.setCenter({
         lng:user.position.lng,
-        lat:user.position.lat},
-        20)
+        lat:user.position.lat})
     }
   },[user])
 
