@@ -25,5 +25,8 @@
     "three": "^0.151.3",
     "typescript": "5.0.4",
     "use-places-autocomplete": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/google.maps": "^3.53.2"
   }
 }
